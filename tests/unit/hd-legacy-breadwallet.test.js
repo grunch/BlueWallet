@@ -29,4 +29,9 @@ it('Legacy HD Breadwallet works', async () => {
     hdBread.getXpub(),
     'xpub68nLLEi3KERQY7jyznC9PQSpSjmekrEmN8324YRCXayMXaavbdEJsK4gEcX2bNf9vGzT4xRks9utZ7ot1CTHLtdyCn9udvv1NWvtY7HXroh',
   );
+
+  hdBread._internal_segwit_index = 1;
+  hdBread._external_segwit_index = 1;
+  assert.ok(hdBread._getExternalAddressByIndex(1).startsWith('bc1'));
+  assert.ok(hdBread._getInternalAddressByIndex(1).startsWith('bc1'));
 });
