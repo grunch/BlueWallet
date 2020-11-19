@@ -32,6 +32,8 @@ it('Legacy HD Breadwallet works', async () => {
 
   hdBread._internal_segwit_index = 1;
   hdBread._external_segwit_index = 1;
+  assert.ok(hdBread._getExternalAddressByIndex(0).startsWith('1'));
+  assert.ok(hdBread._getInternalAddressByIndex(0).startsWith('1'));
   assert.ok(hdBread._getExternalAddressByIndex(1).startsWith('bc1'));
   assert.ok(hdBread._getInternalAddressByIndex(1).startsWith('bc1'));
 });
