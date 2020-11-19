@@ -39,8 +39,14 @@ export class HDLegacyBreadwalletWallet extends HDLegacyP2PKHWallet {
 
   // we need a separate function without external_addresses_cache to use in binarySearch
   _calcNodeAddressByIndex(node, index, p2wpkh = false) {
-    const _node = bitcoinjs.bip32.fromBase58(this.getXpub());
-    const pubkey = _node.derive(node).derive(index).publicKey;
+    let _node;
+    if (node === 0) {
+      _node = this.node0 || (this.node0 = bitcoinjs.bip32.fromBase58(this.getXpub()).derive(node));
+    }
+    if (node === 1) {
+      _node = this.node1 || (this.node1 = bitcoinjs.bip32.fromBase58(this.getXpub()).derive(node));
+    }
+    const pubkey = _node.derive(index).publicKey;
     const address = p2wpkh ? bitcoinjs.payments.p2wpkh({ pubkey }).address : bitcoinjs.payments.p2pkh({ pubkey }).address;
     return address;
   }
