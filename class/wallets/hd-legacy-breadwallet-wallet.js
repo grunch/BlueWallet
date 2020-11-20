@@ -17,6 +17,10 @@ export class HDLegacyBreadwalletWallet extends HDLegacyP2PKHWallet {
   _external_segwit_index = null; // eslint-disable-line camelcase
   _internal_segwit_index = null; // eslint-disable-line camelcase
 
+  allowSendMax() {
+    return true;
+  }
+
   /**
    * @see https://github.com/bitcoinjs/bitcoinjs-lib/issues/584
    * @see https://github.com/bitcoinjs/bitcoinjs-lib/issues/914
@@ -189,7 +193,58 @@ export class HDLegacyBreadwalletWallet extends HDLegacyP2PKHWallet {
     return lastUsedIndex;
   }
 
-  allowSendMax() {
-    return true;
+  _getDerivationPathByAddress(address, BIP = 0) {
+    const path = `m/${BIP}'`;
+    for (let c = 0; c < this.next_free_address_index + this.gap_limit; c++) {
+      if (this._getExternalAddressByIndex(c) === address) return path + '/0/' + c;
+    }
+    for (let c = 0; c < this.next_free_change_address_index + this.gap_limit; c++) {
+      if (this._getInternalAddressByIndex(c) === address) return path + '/1/' + c;
+    }
+
+    return false;
+  }
+
+  _addPsbtInput(psbt, input, sequence, masterFingerprintBuffer) {
+    const pubkey = this._getPubkeyByAddress(input.address);
+    const path = this._getDerivationPathByAddress(input.address);
+
+    if (input.address.startsWith('bc1')) {
+      const p2wpkh = bitcoinjs.payments.p2wpkh({ pubkey });
+      psbt.addInput({
+        hash: input.txId,
+        index: input.vout,
+        sequence,
+        bip32Derivation: [
+          {
+            masterFingerprint: masterFingerprintBuffer,
+            path,
+            pubkey,
+          },
+        ],
+        witnessUtxo: {
+          script: p2wpkh.output,
+          value: input.value,
+        },
+      });
+    } else {
+      if (!input.txhex) throw new Error('UTXO is missing txhex of the input, which is required by PSBT for non-segwit input');
+      psbt.addInput({
+        hash: input.txid,
+        index: input.vout,
+        sequence,
+        bip32Derivation: [
+          {
+            masterFingerprint: masterFingerprintBuffer,
+            path,
+            pubkey,
+          },
+        ],
+        // non-segwit inputs now require passing the whole previous tx as Buffer
+        nonWitnessUtxo: Buffer.from(input.txhex, 'hex'),
+      });
+    }
+
+    return psbt;
   }
 }
